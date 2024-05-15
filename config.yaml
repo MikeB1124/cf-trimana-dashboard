@@ -1,6 +1,10 @@
 namespace: cf-trimana-dashboard
 stacker_bucket_region: us-west-2
 sys_path: ./
+
 stacks:
   - name: bucket
     class_path: bucket.LambdaBucket
+
+  - name: lambdas
+    class_path: lambda.TrimanaDashboardLambdas
