@@ -41,7 +41,30 @@ class TrimanaDashboardLambdas(Blueprint):
                                 }
                             ],
                         },
-                    )
+                    ),
+                    iam.Policy(
+                        PolicyName="LambdaLogPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "logs:CreateLogGroup",
+                                    "Resource": "arn:aws:logs:us-west-2:934985413136:*",
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents",
+                                    ],
+                                    "Resource": [
+                                        "arn:aws:logs:us-west-2:934985413136:log-group:/aws/lambda/trimana-dashboard-api:*"
+                                    ],
+                                },
+                            ],
+                        },
+                    ),
                 ],
             )
         )
