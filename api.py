@@ -15,12 +15,13 @@ class Trimana(Blueprint):
         )
         t.add_resource(api)
 
-        api_stage = apigateway.Stage(
-            "TrimanaDashboardApiStage",
+        api_deployment = apigateway.Deployment(
+            "TrimanaDashboardApiDeployment",
             RestApiId=Ref(api),
             StageName="api",
         )
-        t.add_resource(api_stage)
+
+        t.add_resource(api_deployment)
 
         t.add_output(
             Output(
