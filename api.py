@@ -17,6 +17,7 @@ class Trimana(Blueprint):
 
         ssm_api_id = ssm.Parameter(
             "TrimanaDashboardApiId",
+            Name="/trimana/dashboard/api/id",
             Type="String",
             Value=Ref(api),
         )
