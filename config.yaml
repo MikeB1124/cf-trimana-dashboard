@@ -8,3 +8,6 @@ stacks:
 
   - name: lambdas
     class_path: lambda.TrimanaDashboardLambdas
+
+  - name: api
+    class_path: lambda.Trimana
