@@ -16,6 +16,9 @@ class Trimana(Blueprint):
             "TrimanaDashboardApi",
             Name="trimana-dashboard-api-gateway",
             ApiKeySourceType="HEADER",
+            EndpointConfiguration=apigateway.EndpointConfiguration({
+                "Types": ["REGIONAL"]
+            })
         )
 
         t.add_resource(api)
