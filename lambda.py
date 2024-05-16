@@ -93,16 +93,12 @@ class TrimanaDashboardLambdas(Blueprint):
             )
         )
 
-        api_id_param = Parameter(
-            "ApiId",
-            Type="AWS::SSM::Parameter::Value<String>",
-            Default="/trimana/dashboard/api/id",
-        )
-
         api_resource = apigateway.Resource(
             "TrimanaDashboardHelloResource",
-            ParentId=GetAtt(api_id_param, "RootResourceId"),
-            RestApiId=Ref(api_id_param),
+            ParentId=GetAtt(
+                "{{resolve:ssm:/trimana/dashboard/api/id:1}}", "RootResourceId"
+            ),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id:1}}",
             PathPart="hello",
         )
         t.add_resource(api_resource)
