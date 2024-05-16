@@ -23,6 +23,14 @@ class Trimana(Blueprint):
         )
         t.add_resource(ssm_api_id)
 
+        ssm_api_parent_resource_id = ssm.Parameter(
+            "TrimanaDashboardApiParentResourceId",
+            Name="/trimana/dashboard/api/parent/resource/id",
+            Type="String",
+            Value=GetAtt(api, "RootResourceId"),
+        )
+        t.add_resource(ssm_api_parent_resource_id)
+
         t.add_output(
             Output(
                 "TrimanaDashboardApiId",
