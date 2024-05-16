@@ -15,7 +15,7 @@ class Trimana(Blueprint):
         api = apigateway.RestApi(
             "TrimanaDashboardApi",
             Name="trimana-dashboard-api-gateway",
-            ApiKeySource="HEADER",
+            ApiKeySourceType="HEADER",
         )
 
         t.add_resource(api)
