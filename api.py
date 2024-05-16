@@ -1,10 +1,5 @@
 from stacker.blueprints.base import Blueprint
-from troposphere import (
-    Output,
-    Ref,
-    s3,
-    apigateway
-)
+from troposphere import Output, Ref, s3, apigateway
 
 
 class Trimana(Blueprint):
@@ -16,12 +11,16 @@ class Trimana(Blueprint):
             "TrimanaDashboardApi",
             Name="trimana-dashboard-api-gateway",
             ApiKeySourceType="HEADER",
-            EndpointConfiguration=apigateway.EndpointConfiguration(
-                Types=["REGIONAL"]
-            )
+            EndpointConfiguration=apigateway.EndpointConfiguration(Types=["REGIONAL"]),
         )
-
         t.add_resource(api)
+
+        api_stage = apigateway.Stage(
+            "TrimanaDashboardApiStage",
+            RestApiId=Ref(api),
+            StageName="api",
+        )
+        t.add_resource(api_stage)
 
         t.add_output(
             Output(
