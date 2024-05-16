@@ -1,5 +1,15 @@
 from stacker.blueprints.base import Blueprint
-from troposphere import Template, Ref, GetAtt, iam, awslambda, Parameter, Sub
+from troposphere import (
+    Template,
+    Ref,
+    GetAtt,
+    iam,
+    awslambda,
+    Parameter,
+    Sub,
+    apigateway,
+    ssm,
+)
 
 
 class TrimanaDashboardLambdas(Blueprint):
@@ -82,6 +92,20 @@ class TrimanaDashboardLambdas(Blueprint):
                 Role=GetAtt(lambda_role, "Arn"),
             )
         )
+
+        api_id_param = Parameter(
+            "ApiId",
+            Type="AWS::SSM::Parameter::Value<String>",
+            Default="/trimana/dashboard/api/id",
+        )
+
+        api_resource = apigateway.Resource(
+            "TrimanaDashboardHelloResource",
+            ParentId=GetAtt(api_id_param, "RootResourceId"),
+            RestApiId=Ref(api_id_param),
+            PathPart="hello",
+        )
+        t.add_resource(api_resource)
 
     def create_template(self):
         self.create_trimana_dashboard_lambda()
