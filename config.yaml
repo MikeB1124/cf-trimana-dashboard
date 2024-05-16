@@ -10,4 +10,4 @@ stacks:
     class_path: lambda.TrimanaDashboardLambdas
 
   - name: api
-    class_path: lambda.Trimana
+    class_path: api.Trimana
