@@ -1,5 +1,5 @@
 from stacker.blueprints.base import Blueprint
-from troposphere import Output, Ref, s3, apigateway
+from troposphere import Output, Ref, s3, apigateway, GetAtt, ssm
 
 
 class Trimana(Blueprint):
@@ -15,13 +15,12 @@ class Trimana(Blueprint):
         )
         t.add_resource(api)
 
-        api_deployment = apigateway.Deployment(
-            "TrimanaDashboardApiDeployment",
-            RestApiId=Ref(api),
-            StageName="api",
+        ssm_api_id = ssm.Parameter(
+            "TrimanaDashboardApiId",
+            Type="String",
+            Value=Ref(api),
         )
-
-        t.add_resource(api_deployment)
+        t.add_resource(ssm_api_id)
 
         t.add_output(
             Output(
