@@ -93,9 +93,6 @@ class Trimana(Blueprint):
                                 },
                                 {
                                     "Effect": "Allow",
-                                    "Principal": {
-                                        "Service": "apigateway.amazonaws.com"
-                                    },
                                     "Action": "lambda:InvokeFunction",
                                     "Resource": Sub(
                                         "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaName}",
