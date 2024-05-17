@@ -33,7 +33,12 @@ class Trimana(Blueprint):
                     "Statement": [
                         {
                             "Effect": "Allow",
-                            "Principal": {"Service": ["lambda.amazonaws.com"]},
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com",
+                                    "apigateway.amazonaws.com",
+                                ]
+                            },
                             "Action": ["sts:AssumeRole"],
                         }
                     ],
@@ -93,22 +98,21 @@ class Trimana(Blueprint):
             )
         )
 
-        self.template.add_resource(
-            awslambda.Function(
-                "TrimanaDashboardLambdaFunction",
-                FunctionName=self.get_variables()["env-dict"]["LambdaName"],
-                Code=awslambda.Code(
-                    S3Bucket=Ref(self.existing_trimana_bucket),
-                    S3Key=Sub(
-                        "lambdas/${LambdaName}.zip",
-                        LambdaName=self.get_variables()["env-dict"]["LambdaName"],
-                    ),
+        lambda_function = awslambda.Function(
+            "TrimanaDashboardLambdaFunction",
+            FunctionName=self.get_variables()["env-dict"]["LambdaName"],
+            Code=awslambda.Code(
+                S3Bucket=Ref(self.existing_trimana_bucket),
+                S3Key=Sub(
+                    "lambdas/${LambdaName}.zip",
+                    LambdaName=self.get_variables()["env-dict"]["LambdaName"],
                 ),
-                Handler="handler",
-                Runtime="provided.al2023",
-                Role=GetAtt(lambda_role, "Arn"),
-            )
+            ),
+            Handler="handler",
+            Runtime="provided.al2023",
+            Role=GetAtt(lambda_role, "Arn"),
         )
+        self.template.add_resource(lambda_function)
 
         poynt_api_resource = apigateway.Resource(
             "TrimanaDashboardPoyntResource",
@@ -125,6 +129,24 @@ class Trimana(Blueprint):
             PathPart="sales",
         )
         self.template.add_resource(poynt_sales_api_resource)
+
+        poynt_sales_api_method = apigateway.Method(
+            "TrimanaDashboardPoyntSalesMethod",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(poynt_sales_api_resource),
+            Integration=apigateway.Integration(
+                Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
+                IntegrationHttpMethod="POST",
+                Type="HTTP_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(poynt_sales_api_method)
 
     def create_template(self):
         self.get_existing_trimana_bucket()
