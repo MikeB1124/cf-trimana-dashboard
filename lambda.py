@@ -86,7 +86,7 @@ class Trimana(Blueprint):
                                         Sub(
                                             "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaName}:*",
                                             LambdaName=self.get_variables()["env-dict"][
-                                                "LambdaName"
+                                                "TrimanaDashboardLambdaName"
                                             ],
                                         )
                                     ],
@@ -98,21 +98,23 @@ class Trimana(Blueprint):
             )
         )
 
-        lambda_function = awslambda.Function(
+        trimana_dashboard_lambda_function = awslambda.Function(
             "TrimanaDashboardLambdaFunction",
-            FunctionName=self.get_variables()["env-dict"]["LambdaName"],
+            FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
             Code=awslambda.Code(
                 S3Bucket=Ref(self.existing_trimana_bucket),
                 S3Key=Sub(
                     "lambdas/${LambdaName}.zip",
-                    LambdaName=self.get_variables()["env-dict"]["LambdaName"],
+                    LambdaName=self.get_variables()["env-dict"][
+                        "TrimanaDashboardLambdaName"
+                    ],
                 ),
             ),
             Handler="handler",
             Runtime="provided.al2023",
             Role=GetAtt(lambda_role, "Arn"),
         )
-        self.template.add_resource(lambda_function)
+        self.template.add_resource(trimana_dashboard_lambda_function)
 
         poynt_api_resource = apigateway.Resource(
             "TrimanaDashboardPoyntResource",
@@ -143,7 +145,7 @@ class Trimana(Blueprint):
                 Type="AWS_PROXY",
                 Uri=Sub(
                     "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
-                    LambdaArn=GetAtt(lambda_function, "Arn"),
+                    LambdaArn=GetAtt(trimana_dashboard_lambda_function, "Arn"),
                 ),
             ),
         )

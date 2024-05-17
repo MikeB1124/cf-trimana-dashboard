@@ -14,7 +14,7 @@ stacks:
     variables:
         env-dict:
           BucketName: trimana-dashboard-bucket
-          LambdaName: trimana-dashboard-api
+          TrimanaDashboardLambdaName: trimana-dashboard-api
 
   - name: api
     class_path: api.Trimana
