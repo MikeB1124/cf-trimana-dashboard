@@ -132,6 +132,7 @@ class Trimana(Blueprint):
 
         poynt_sales_api_method = apigateway.Method(
             "TrimanaDashboardPoyntSalesMethod",
+            AuthorizationType="NONE",
             ApiKeyRequired=True,
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
