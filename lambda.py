@@ -139,6 +139,7 @@ class Trimana(Blueprint):
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             ResourceId=Ref(poynt_sales_api_resource),
+            RequestParameters={"method.request.header.x-api-key": True},
             Integration=apigateway.Integration(
                 Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",

@@ -21,3 +21,8 @@ stacks:
     variables:
         env-dict:
           ApiName: trimana-dashboard-api-gateway
+
+  - name: integrations
+    class_path: integrations.Trimana
+    variables:
+        env-dict:

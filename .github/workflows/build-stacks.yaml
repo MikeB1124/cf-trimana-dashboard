@@ -35,3 +35,4 @@ jobs:
           stacker build config.yaml --targets bucket -t
           stacker build config.yaml --targets api -t --recreate-failed
           stacker build config.yaml --targets lambdas -t --recreate-failed
+          stacker build config.yaml --targets integrations -t --recreate-failed
