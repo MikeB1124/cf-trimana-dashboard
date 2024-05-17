@@ -18,3 +18,6 @@ stacks:
 
   - name: api
     class_path: api.Trimana
+    variables:
+        env-dict:
+          ApiName: trimana-dashboard-api-gateway

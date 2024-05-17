@@ -3,41 +3,42 @@ from troposphere import Output, Ref, s3, apigateway, GetAtt, ssm
 
 
 class Trimana(Blueprint):
+    VARIABLES = {"env-dict": {"type": dict}}
 
     def create_api_gateway(self):
-        t = self.template
-
-        api = apigateway.RestApi(
+        self.api = apigateway.RestApi(
             "TrimanaDashboardApi",
-            Name="trimana-dashboard-api-gateway",
+            Name=self.get_variables()["env-dict"]["ApiName"],
             ApiKeySourceType="HEADER",
             EndpointConfiguration=apigateway.EndpointConfiguration(Types=["REGIONAL"]),
         )
-        t.add_resource(api)
+        self.template.add_resource(self.api)
 
+        self.template.add_output(
+            Output(
+                "TrimanaDashboardApiId",
+                Value=Ref(self.api),
+            )
+        )
+
+    def store_ssm_parameters(self):
         ssm_api_id = ssm.Parameter(
             "TrimanaDashboardApiId",
             Name="/trimana/dashboard/api/id",
             Type="String",
-            Value=Ref(api),
+            Value=Ref(self.api),
         )
-        t.add_resource(ssm_api_id)
+        self.template.add_resource(ssm_api_id)
 
         ssm_api_parent_resource_id = ssm.Parameter(
             "TrimanaDashboardApiParentResourceId",
             Name="/trimana/dashboard/api/parent/resource/id",
             Type="String",
-            Value=GetAtt(api, "RootResourceId"),
+            Value=GetAtt(self.api, "RootResourceId"),
         )
-        t.add_resource(ssm_api_parent_resource_id)
-
-        t.add_output(
-            Output(
-                "TrimanaDashboardApiId",
-                Value=Ref(api),
-            )
-        )
+        self.template.add_resource(ssm_api_parent_resource_id)
 
     def create_template(self):
         self.create_api_gateway()
+        self.store_ssm_parameters()
         return self.template
