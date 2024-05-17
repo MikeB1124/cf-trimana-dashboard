@@ -91,6 +91,27 @@ class Trimana(Blueprint):
                                         )
                                     ],
                                 },
+                                {
+                                    "Effect": "Allow",
+                                    "Principal": {
+                                        "Service": "apigateway.amazonaws.com"
+                                    },
+                                    "Action": "lambda:InvokeFunction",
+                                    "Resource": Sub(
+                                        "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaName}",
+                                        LambdaName=self.get_variables()["env-dict"][
+                                            "TrimanaDashboardLambdaName"
+                                        ],
+                                    ),
+                                    "Condition": {
+                                        "ArnLike": {
+                                            "AWS:SourceArn": Sub(
+                                                "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
+                                                ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                                            )
+                                        }
+                                    },
+                                },
                             ],
                         },
                     ),
@@ -116,17 +137,9 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(trimana_dashboard_lambda_function)
 
-        poynt_api_resource = apigateway.Resource(
-            "TrimanaDashboardPoyntResource",
-            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
-            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            PathPart="poynt",
-        )
-        self.template.add_resource(poynt_api_resource)
-
         poynt_sales_api_resource = apigateway.Resource(
             "TrimanaDashboardPoyntSalesResource",
-            ParentId=Ref(poynt_api_resource),
+            ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             PathPart="sales",
         )
