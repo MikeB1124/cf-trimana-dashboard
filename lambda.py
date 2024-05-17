@@ -114,29 +114,13 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(trimana_dashboard_lambda_function)
 
-        self.template.add_resource(
-            awslambda.Permission(
-                "TrimanaDashboardLambdaInvokePermission",
-                DependsOn=trimana_dashboard_lambda_function,
-                Action="lambda:InvokeFunction",
-                FunctionName=self.get_variables()["env-dict"][
-                    "TrimanaDashboardLambdaName"
-                ],
-                Principal="apigateway.amazonaws.com",
-                SourceArn=Sub(
-                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/sales",
-                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-                ),
-            )
-        )
-
-        poynt_sales_api_resource = apigateway.Resource(
-            "TrimanaDashboardPoyntSalesResource",
-            ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
-            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            PathPart="sales",
-        )
-        self.template.add_resource(poynt_sales_api_resource)
+        # poynt_sales_api_resource = apigateway.Resource(
+        #     "TrimanaDashboardPoyntSalesResource",
+        #     ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
+        #     RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+        #     PathPart="sales",
+        # )
+        # self.template.add_resource(poynt_sales_api_resource)
 
         poynt_sales_api_method = apigateway.Method(
             "TrimanaDashboardPoyntSalesMethod",
@@ -145,7 +129,7 @@ class Trimana(Blueprint):
             ApiKeyRequired=True,
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            ResourceId=Ref(poynt_sales_api_resource),
+            ResourceId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
             Integration=apigateway.Integration(
                 Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",
@@ -157,6 +141,22 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(poynt_sales_api_method)
+
+        self.template.add_resource(
+            awslambda.Permission(
+                "TrimanaDashboardLambdaInvokePermission",
+                DependsOn=trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"][
+                    "TrimanaDashboardLambdaName"
+                ],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
 
     def create_template(self):
         self.get_existing_trimana_bucket()
