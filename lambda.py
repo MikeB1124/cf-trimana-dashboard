@@ -12,22 +12,22 @@ from troposphere import (
 )
 
 
-class TrimanaDashboardLambdas(Blueprint):
+class Trimana(Blueprint):
+    VARIABLES = {"env-dict": {"type": dict}}
 
-    def create_trimana_dashboard_lambda(self):
-        t = self.template
-
-        existing_trimana_bucket = t.add_parameter(
+    def get_existing_trimana_bucket(self):
+        self.existing_trimana_bucket = self.template.add_parameter(
             Parameter(
-                "S3Bucket",
+                "TrimanaDashboardS3Bucket",
                 Type="String",
-                Default="trimana-dashboard-bucket",
+                Default=self.get_variables()["env-dict"]["BucketName"],
             )
         )
 
-        lambda_role = t.add_resource(
+    def create_trimana_dashboard_lambda(self):
+        lambda_role = self.template.add_resource(
             iam.Role(
-                "LambdaExecutionRole",
+                "TrimanaDashboardLambdaExecutionRole",
                 AssumeRolePolicyDocument={
                     "Version": "2012-10-17",
                     "Statement": [
@@ -40,27 +40,34 @@ class TrimanaDashboardLambdas(Blueprint):
                 },
                 Policies=[
                     iam.Policy(
-                        PolicyName="LambdaS3Policy",
+                        PolicyName="TrimanaDashboardLambdaS3Policy",
                         PolicyDocument={
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
                                     "Effect": "Allow",
                                     "Action": ["s3:GetObject"],
-                                    "Resource": [Sub("arn:aws:s3:::${S3Bucket}/*")],
+                                    "Resource": [
+                                        Sub(
+                                            "arn:aws:s3:::${BucketName}/*",
+                                            BucketName=self.get_variables()["env-dict"][
+                                                "BucketName"
+                                            ],
+                                        )
+                                    ],
                                 }
                             ],
                         },
                     ),
                     iam.Policy(
-                        PolicyName="LambdaLogPolicy",
+                        PolicyName="TrimanaDashboardLambdaLogPolicy",
                         PolicyDocument={
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
                                     "Effect": "Allow",
                                     "Action": "logs:CreateLogGroup",
-                                    "Resource": "arn:aws:logs:us-west-2:934985413136:*",
+                                    "Resource": Sub("arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"),
                                 },
                                 {
                                     "Effect": "Allow",
@@ -69,7 +76,12 @@ class TrimanaDashboardLambdas(Blueprint):
                                         "logs:PutLogEvents",
                                     ],
                                     "Resource": [
-                                        "arn:aws:logs:us-west-2:934985413136:log-group:/aws/lambda/trimana-dashboard-api:*"
+                                        Sub(
+                                            "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaName}:*",
+                                            LambdaName=self.get_variables()["env-dict"][
+                                                "LambdaName"
+                                            ],
+                                        )
                                     ],
                                 },
                             ],
@@ -79,13 +91,16 @@ class TrimanaDashboardLambdas(Blueprint):
             )
         )
 
-        t.add_resource(
+        self.template.add_resource(
             awslambda.Function(
-                "LambdaFunction",
-                FunctionName="trimana-dashboard-api",
+                "TrimanaDashboardLambdaFunction",
+                FunctionName=self.get_variables()["env-dict"]["LambdaName"],
                 Code=awslambda.Code(
-                    S3Bucket=Ref(existing_trimana_bucket),
-                    S3Key="lambdas/trimana-dashboard-api.zip",
+                    S3Bucket=Ref(self.existing_trimana_bucket),
+                    S3Key=Sub(
+                        "lambdas/${LambdaName}.zip",
+                        LambdaName=self.get_variables()["env-dict"]["LambdaName"],
+                    ),
                 ),
                 Handler="handler",
                 Runtime="provided.al2023",
@@ -99,8 +114,9 @@ class TrimanaDashboardLambdas(Blueprint):
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             PathPart="hello",
         )
-        t.add_resource(api_resource)
+        self.template.add_resource(api_resource)
 
     def create_template(self):
+        self.get_existing_trimana_bucket()
         self.create_trimana_dashboard_lambda()
         return self.template

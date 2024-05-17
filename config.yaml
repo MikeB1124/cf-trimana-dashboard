@@ -4,10 +4,17 @@ sys_path: ./
 
 stacks:
   - name: bucket
-    class_path: bucket.LambdaBucket
+    class_path: bucket.Trimana
+    variables:
+      env-dict:
+        BucketName: trimana-dashboard-bucket
 
   - name: lambdas
-    class_path: lambda.TrimanaDashboardLambdas
+    class_path: lambda.Trimana
+    variables:
+        env-dict:
+          BucketName: trimana-dashboard-bucket
+          LambdaName: trimana-dashboard-api
 
   - name: api
     class_path: api.Trimana

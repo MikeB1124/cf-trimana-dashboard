@@ -6,17 +6,17 @@ from troposphere import (
 )
 
 
-class LambdaBucket(Blueprint):
+class Trimana(Blueprint):
+    VARIABLES = {"env-dict": {"type": dict}}
+
     def create_template(self):
-        t = self.template
-
         s3_bucket = s3.Bucket(
-            "S3Bucket",
-            BucketName="trimana-dashboard-bucket",
+            "TrimanaDashboardS3Bucket",
+            BucketName=self.get_variables()["env-dict"]["BucketName"],
         )
-        t.add_resource(s3_bucket)
+        self.template.add_resource(s3_bucket)
 
-        t.add_output(
+        self.template.add_output(
             Output(
                 "BucketName",
                 Value=Ref(s3_bucket),
