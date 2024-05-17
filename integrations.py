@@ -1,14 +1,7 @@
 from stacker.blueprints.base import Blueprint
 from troposphere import (
-    Template,
     Ref,
-    GetAtt,
-    iam,
-    awslambda,
-    Parameter,
-    Sub,
     apigateway,
-    ssm,
 )
 
 

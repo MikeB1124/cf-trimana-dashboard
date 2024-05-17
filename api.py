@@ -1,5 +1,5 @@
 from stacker.blueprints.base import Blueprint
-from troposphere import Output, Ref, s3, apigateway, GetAtt, ssm
+from troposphere import Output, Ref, apigateway, GetAtt, ssm
 
 
 class Trimana(Blueprint):

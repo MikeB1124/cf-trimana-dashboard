@@ -1,6 +1,5 @@
 from stacker.blueprints.base import Blueprint
 from troposphere import (
-    Template,
     Ref,
     GetAtt,
     iam,
@@ -8,7 +7,6 @@ from troposphere import (
     Parameter,
     Sub,
     apigateway,
-    ssm,
 )
 
 
@@ -91,28 +89,25 @@ class Trimana(Blueprint):
                                         )
                                     ],
                                 },
-                                {
-                                    "Effect": "Allow",
-                                    "Action": "lambda:InvokeFunction",
-                                    "Resource": Sub(
-                                        "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaName}",
-                                        LambdaName=self.get_variables()["env-dict"][
-                                            "TrimanaDashboardLambdaName"
-                                        ],
-                                    ),
-                                    "Condition": {
-                                        "ArnLike": {
-                                            "AWS:SourceArn": Sub(
-                                                "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
-                                                ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-                                            )
-                                        }
-                                    },
-                                },
                             ],
                         },
                     ),
                 ],
+            )
+        )
+
+        self.template.add_resource(
+            awslambda.Permission(
+                "TrimanaDashboardLambdaInvokePermission",
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"][
+                    "TrimanaDashboardLambdaName"
+                ],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
             )
         )
 
