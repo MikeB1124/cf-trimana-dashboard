@@ -131,7 +131,7 @@ class Trimana(Blueprint):
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             ResourceId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
             Integration=apigateway.Integration(
-                Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
+                # Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",
                 Type="AWS_PROXY",
                 Uri=Sub(
