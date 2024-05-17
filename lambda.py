@@ -67,7 +67,9 @@ class Trimana(Blueprint):
                                 {
                                     "Effect": "Allow",
                                     "Action": "logs:CreateLogGroup",
-                                    "Resource": Sub("arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"),
+                                    "Resource": Sub(
+                                        "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                                    ),
                                 },
                                 {
                                     "Effect": "Allow",
@@ -108,13 +110,21 @@ class Trimana(Blueprint):
             )
         )
 
-        api_resource = apigateway.Resource(
-            "TrimanaDashboardHelloResource",
+        poynt_api_resource = apigateway.Resource(
+            "TrimanaDashboardPoyntResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            PathPart="hello",
+            PathPart="poynt",
         )
-        self.template.add_resource(api_resource)
+        self.template.add_resource(poynt_api_resource)
+
+        poynt_sales_api_resource = apigateway.Resource(
+            "TrimanaDashboardPoyntSalesResource",
+            ParentId=Ref(poynt_api_resource),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="sales",
+        )
+        self.template.add_resource(poynt_sales_api_resource)
 
     def create_template(self):
         self.get_existing_trimana_bucket()
