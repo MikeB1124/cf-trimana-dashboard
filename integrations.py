@@ -59,6 +59,7 @@ class Trimana(Blueprint):
             apigateway.ApiKey(
                 "TrimanaDashboardApiKey",
                 Name=self.get_variables()["env-dict"]["ApiKeyName"],
+                Enabled=True,
             )
         )
 
