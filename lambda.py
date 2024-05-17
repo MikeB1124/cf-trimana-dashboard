@@ -129,7 +129,7 @@ class Trimana(Blueprint):
             ApiKeyRequired=True,
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            ResourceId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
+            ResourceId=Ref(poynt_sales_api_resource),
             Integration=apigateway.Integration(
                 IntegrationHttpMethod="POST",
                 Type="AWS_PROXY",
