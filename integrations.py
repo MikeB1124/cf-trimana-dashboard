@@ -53,7 +53,7 @@ class Trimana(Blueprint):
                 ApiStages=[
                     apigateway.ApiStage(
                         ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-                        Stage=Ref(trimana_dashboard_api_stage),
+                        Stage="api",
                     )
                 ],
                 Description="Trimana Dashboard Usage Plan",
