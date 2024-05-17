@@ -151,7 +151,7 @@ class Trimana(Blueprint):
                 ],
                 Principal="apigateway.amazonaws.com",
                 SourceArn=Sub(
-                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt",
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/sales",
                     ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
                 ),
             )
