@@ -124,7 +124,7 @@ class Trimana(Blueprint):
                 ],
                 Principal="apigateway.amazonaws.com",
                 SourceArn=Sub(
-                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/sales",
                     ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
                 ),
             )
@@ -140,6 +140,7 @@ class Trimana(Blueprint):
 
         poynt_sales_api_method = apigateway.Method(
             "TrimanaDashboardPoyntSalesMethod",
+            DependsOn=trimana_dashboard_lambda_function,
             AuthorizationType="NONE",
             ApiKeyRequired=True,
             HttpMethod="GET",
