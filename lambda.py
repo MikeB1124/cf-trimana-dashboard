@@ -114,13 +114,13 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(trimana_dashboard_lambda_function)
 
-        # poynt_sales_api_resource = apigateway.Resource(
-        #     "TrimanaDashboardPoyntSalesResource",
-        #     ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
-        #     RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-        #     PathPart="sales",
-        # )
-        # self.template.add_resource(poynt_sales_api_resource)
+        poynt_sales_api_resource = apigateway.Resource(
+            "TrimanaDashboardPoyntSalesResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="sales",
+        )
+        self.template.add_resource(poynt_sales_api_resource)
 
         poynt_sales_api_method = apigateway.Method(
             "TrimanaDashboardPoyntSalesMethod",
@@ -131,7 +131,6 @@ class Trimana(Blueprint):
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             ResourceId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
             Integration=apigateway.Integration(
-                # Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",
                 Type="AWS_PROXY",
                 Uri=Sub(
