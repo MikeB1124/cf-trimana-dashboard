@@ -36,7 +36,7 @@ class Trimana(Blueprint):
         trimana_dashboard_api_key = self.template.add_resource(
             apigateway.ApiKey(
                 "TrimanaDashboardApiKey",
-                Name="TrimanaDashboardApiKey",
+                Name=self.get_variables()["env-dict"]["ApiKeyName"],
                 StageKeys=[
                     apigateway.StageKey(
                         RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
@@ -49,11 +49,11 @@ class Trimana(Blueprint):
         trimana_dashboard_usage_plan = self.template.add_resource(
             apigateway.UsagePlan(
                 "TrimanaDashboardUsagePlan",
-                UsagePlanName="TrimanaDashboardUsagePlan",
+                UsagePlanName=self.get_variables()["env-dict"]["ApiUsagePlanName"],
                 ApiStages=[
                     apigateway.ApiStage(
                         ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-                        Stage="{{resolve:ssm:/trimana/dashboard/api/stage}}",
+                        Stage=Ref(trimana_dashboard_api_stage),
                     )
                 ],
                 Description="Trimana Dashboard Usage Plan",
@@ -68,7 +68,7 @@ class Trimana(Blueprint):
             )
         )
 
-        trimana_dashboard_usage_plan_key = self.template.add_resource(
+        self.template.add_resource(
             apigateway.UsagePlanKey(
                 "TrimanaDashboardUsagePlanKey",
                 KeyId=Ref(trimana_dashboard_api_key),
@@ -76,5 +76,3 @@ class Trimana(Blueprint):
                 UsagePlanId=Ref(trimana_dashboard_usage_plan),
             )
         )
-
-        return self.template

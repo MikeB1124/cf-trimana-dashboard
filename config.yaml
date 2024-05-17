@@ -26,3 +26,5 @@ stacks:
     class_path: integrations.Trimana
     variables:
         env-dict:
+          ApiKeyName: TrimanaDashboardApiKey
+          ApiUsagePlanName: TrimanaDashboardApiUsagePlan
