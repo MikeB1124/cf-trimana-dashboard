@@ -140,7 +140,7 @@ class Trimana(Blueprint):
             Integration=apigateway.Integration(
                 Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",
-                Type="HTTP_PROXY",
+                Type="AWS_PROXY",
                 Uri=Sub(
                     "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
                     LambdaArn=GetAtt(lambda_function, "Arn"),
