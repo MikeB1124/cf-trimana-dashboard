@@ -31,7 +31,12 @@ class Trimana(Blueprint):
                     "Statement": [
                         {
                             "Effect": "Allow",
-                            "Principal": {"Service": ["lambda.amazonaws.com"]},
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com",
+                                    "apigateway.amazonaws.com",
+                                ]
+                            },
                             "Action": ["sts:AssumeRole"],
                         }
                     ],
