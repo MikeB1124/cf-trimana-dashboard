@@ -91,21 +91,6 @@ class Trimana(Blueprint):
             )
         )
 
-        self.template.add_resource(
-            awslambda.Permission(
-                "TrimanaDashboardLambdaInvokePermission",
-                Action="lambda:InvokeFunction",
-                FunctionName=self.get_variables()["env-dict"][
-                    "TrimanaDashboardLambdaName"
-                ],
-                Principal="apigateway.amazonaws.com",
-                SourceArn=Sub(
-                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
-                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-                ),
-            )
-        )
-
         trimana_dashboard_lambda_function = awslambda.Function(
             "TrimanaDashboardLambdaFunction",
             FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
@@ -124,6 +109,22 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(trimana_dashboard_lambda_function)
 
+        self.template.add_resource(
+            awslambda.Permission(
+                "TrimanaDashboardLambdaInvokePermission",
+                DependsOn=trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"][
+                    "TrimanaDashboardLambdaName"
+                ],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+
         poynt_sales_api_resource = apigateway.Resource(
             "TrimanaDashboardPoyntSalesResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
@@ -139,7 +140,6 @@ class Trimana(Blueprint):
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             ResourceId=Ref(poynt_sales_api_resource),
-            RequestParameters={"method.request.header.x-api-key": True},
             Integration=apigateway.Integration(
                 Credentials=GetAtt("TrimanaDashboardLambdaExecutionRole", "Arn"),
                 IntegrationHttpMethod="POST",
