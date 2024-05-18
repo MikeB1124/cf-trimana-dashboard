@@ -108,6 +108,13 @@ class Trimana(Blueprint):
                     ],
                 ),
             ),
+            Environment=awslambda.Environment(
+                Variables={
+                    "SHARED_SECRETS": self.get_variables()["env-dict"][
+                        "SharedSecretsId"
+                    ]
+                }
+            ),
             Handler="handler",
             Runtime="provided.al2023",
             Role=GetAtt(lambda_role, "Arn"),

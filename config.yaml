@@ -15,6 +15,7 @@ stacks:
         env-dict:
           BucketName: trimana-dashboard-bucket
           TrimanaDashboardLambdaName: trimana-dashboard-api
+          SharedSecretsId: trimana/dashboard/shared/secrets
 
   - name: api
     class_path: api.Trimana
