@@ -177,7 +177,7 @@ class Trimana(Blueprint):
 
         self.template.add_resource(
             awslambda.Permission(
-                "TrimanaDashboardLambdaInvokePermission",
+                "PoyntTransactionsLambdaInvokePermission",
                 DependsOn=trimana_dashboard_lambda_function,
                 Action="lambda:InvokeFunction",
                 FunctionName=self.get_variables()["env-dict"][
@@ -193,7 +193,7 @@ class Trimana(Blueprint):
 
         self.template.add_resource(
             awslambda.Permission(
-                "TrimanaDashboardLambdaInvokePermission",
+                "PoyntSalesLambdaInvokePermission",
                 DependsOn=trimana_dashboard_lambda_function,
                 Action="lambda:InvokeFunction",
                 FunctionName=self.get_variables()["env-dict"][
