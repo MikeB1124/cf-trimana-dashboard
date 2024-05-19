@@ -185,7 +185,23 @@ class Trimana(Blueprint):
                 ],
                 Principal="apigateway.amazonaws.com",
                 SourceArn=Sub(
-                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/sales",
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/transactions",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+
+        self.template.add_resource(
+            awslambda.Permission(
+                "TrimanaDashboardLambdaInvokePermission",
+                DependsOn=trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"][
+                    "TrimanaDashboardLambdaName"
+                ],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/poynt/totals",
                     ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
                 ),
             )
