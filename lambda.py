@@ -121,22 +121,22 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(trimana_dashboard_lambda_function)
 
-        poynt_sales_api_resource = apigateway.Resource(
-            "TrimanaDashboardPoyntSalesResource",
+        poynt_transactions_api_resource = apigateway.Resource(
+            "TrimanaDashboardPoyntTransactionsResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            PathPart="sales",
+            PathPart="transactions",
         )
-        self.template.add_resource(poynt_sales_api_resource)
+        self.template.add_resource(poynt_transactions_api_resource)
 
-        poynt_sales_api_method = apigateway.Method(
-            "TrimanaDashboardPoyntSalesMethod",
+        poynt_transactions_api_method = apigateway.Method(
+            "TrimanaDashboardPoyntTransactionsMethod",
             DependsOn=trimana_dashboard_lambda_function,
             AuthorizationType="NONE",
             ApiKeyRequired=True,
             HttpMethod="GET",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            ResourceId=Ref(poynt_sales_api_resource),
+            ResourceId=Ref(poynt_transactions_api_resource),
             Integration=apigateway.Integration(
                 IntegrationHttpMethod="POST",
                 Type="AWS_PROXY",
@@ -146,7 +146,34 @@ class Trimana(Blueprint):
                 ),
             ),
         )
-        self.template.add_resource(poynt_sales_api_method)
+        self.template.add_resource(poynt_transactions_api_method)
+
+        poynt_totals_api_resource = apigateway.Resource(
+            "TrimanaDashboardPoyntTotalsResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/poynt/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="totals",
+        )
+        self.template.add_resource(poynt_totals_api_resource)
+
+        poynt_totals_api_method = apigateway.Method(
+            "TrimanaDashboardPoyntTotalsMethod",
+            DependsOn=trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(poynt_totals_api_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(poynt_totals_api_method)
 
         self.template.add_resource(
             awslambda.Permission(
