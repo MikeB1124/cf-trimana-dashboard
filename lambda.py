@@ -92,6 +92,26 @@ class Trimana(Blueprint):
                             ],
                         },
                     ),
+                    iam.Policy(
+                        PolicyName="TrimanaDashboardLambdaSecretsManagerPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["secretsmanager:GetSecretValue"],
+                                    "Resource": [
+                                        Sub(
+                                            "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretId}",
+                                            SecretId=self.get_variables()["env-dict"][
+                                                "SharedSecretsId"
+                                            ],
+                                        )
+                                    ],
+                                }
+                            ],
+                        },
+                    ),
                 ],
             )
         )
