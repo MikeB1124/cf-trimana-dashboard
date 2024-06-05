@@ -102,7 +102,7 @@ class Trimana(Blueprint):
                                     "Action": ["secretsmanager:GetSecretValue"],
                                     "Resource": [
                                         Sub(
-                                            "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretId}-yg1E8V",
+                                            "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretId}-yuRaM1",
                                             SecretId=self.get_variables()["env-dict"][
                                                 "SharedSecretsId"
                                             ],
