@@ -22,6 +22,14 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(self.poynt_api_resource)
 
+        self.payroll_api_resource = apigateway.Resource(
+            "TrimanaDashboardPayrollResource",
+            ParentId=GetAtt(self.api, "RootResourceId"),
+            RestApiId=Ref(self.api),
+            PathPart="payroll",
+        )
+        self.template.add_resource(self.payroll_api_resource)
+
         self.template.add_output(
             Output(
                 "TrimanaDashboardApiId",
@@ -53,6 +61,14 @@ class Trimana(Blueprint):
             Value=Ref(self.poynt_api_resource),
         )
         self.template.add_resource(ssm_poynt_resource_id)
+
+        ssm_payroll_resource_id = ssm.Parameter(
+            "TrimanaDashboardPayrollResourceId",
+            Name="/trimana/dashboard/payroll/resource/id",
+            Type="String",
+            Value=Ref(self.payroll_api_resource),
+        )
+        self.template.add_resource(ssm_payroll_resource_id)
 
     def create_template(self):
         self.create_api_gateway()
