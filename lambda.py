@@ -237,7 +237,7 @@ class Trimana(Blueprint):
             ApiKeyRequired=True,
             HttpMethod="POST",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
-            ResourceId=Ref(payroll_event_api_resource),
+            ResourceId=Ref(payroll_report_api_resource),
             Integration=apigateway.Integration(
                 IntegrationHttpMethod="POST",
                 Type="AWS_PROXY",
