@@ -196,7 +196,7 @@ class Trimana(Blueprint):
         self.template.add_resource(poynt_totals_api_method)
 
         payroll_event_api_resource = apigateway.Resource(
-            "TrimanaDashboardPayrollResource",
+            "TrimanaDashboardPayrollEventResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/payroll/resource/id}}",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             PathPart="event",
@@ -204,7 +204,7 @@ class Trimana(Blueprint):
         self.template.add_resource(payroll_event_api_resource)
 
         payroll_report_api_resource = apigateway.Resource(
-            "TrimanaDashboardPayrollResource",
+            "TrimanaDashboardPayrollReportResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/payroll/resource/id}}",
             RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
             PathPart="report",
