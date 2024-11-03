@@ -7,6 +7,7 @@ from troposphere import (
     Parameter,
     Sub,
     apigateway,
+    scheduler,
 )
 
 
@@ -116,7 +117,7 @@ class Trimana(Blueprint):
             )
         )
 
-        trimana_dashboard_lambda_function = awslambda.Function(
+        self.trimana_dashboard_lambda_function = awslambda.Function(
             "TrimanaDashboardLambdaFunction",
             FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
             Code=awslambda.Code(
@@ -139,7 +140,7 @@ class Trimana(Blueprint):
             Runtime="provided.al2023",
             Role=GetAtt(lambda_role, "Arn"),
         )
-        self.template.add_resource(trimana_dashboard_lambda_function)
+        self.template.add_resource(self.trimana_dashboard_lambda_function)
 
         payroll_event_api_resource = apigateway.Resource(
             "TrimanaDashboardPayrollEventResource",
@@ -159,7 +160,7 @@ class Trimana(Blueprint):
 
         payroll_event_api_method = apigateway.Method(
             "TrimanaDashboardPayrollEventMethod",
-            DependsOn=trimana_dashboard_lambda_function,
+            DependsOn=self.trimana_dashboard_lambda_function,
             AuthorizationType="NONE",
             ApiKeyRequired=True,
             HttpMethod="POST",
@@ -170,7 +171,7 @@ class Trimana(Blueprint):
                 Type="AWS_PROXY",
                 Uri=Sub(
                     "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
-                    LambdaArn=GetAtt(trimana_dashboard_lambda_function, "Arn"),
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
                 ),
             ),
         )
@@ -178,7 +179,7 @@ class Trimana(Blueprint):
 
         payroll_report_api_method = apigateway.Method(
             "TrimanaDashboardPayrollReportMethod",
-            DependsOn=trimana_dashboard_lambda_function,
+            DependsOn=self.trimana_dashboard_lambda_function,
             AuthorizationType="NONE",
             ApiKeyRequired=True,
             HttpMethod="POST",
@@ -189,7 +190,7 @@ class Trimana(Blueprint):
                 Type="AWS_PROXY",
                 Uri=Sub(
                     "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
-                    LambdaArn=GetAtt(trimana_dashboard_lambda_function, "Arn"),
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
                 ),
             ),
         )
@@ -198,7 +199,7 @@ class Trimana(Blueprint):
         self.template.add_resource(
             awslambda.Permission(
                 "PayrollEventLambdaInvokePermission",
-                DependsOn=trimana_dashboard_lambda_function,
+                DependsOn=self.trimana_dashboard_lambda_function,
                 Action="lambda:InvokeFunction",
                 FunctionName=self.get_variables()["env-dict"][
                     "TrimanaDashboardLambdaName"
@@ -214,7 +215,7 @@ class Trimana(Blueprint):
         self.template.add_resource(
             awslambda.Permission(
                 "PayrollReportLambdaInvokePermission",
-                DependsOn=trimana_dashboard_lambda_function,
+                DependsOn=self.trimana_dashboard_lambda_function,
                 Action="lambda:InvokeFunction",
                 FunctionName=self.get_variables()["env-dict"][
                     "TrimanaDashboardLambdaName"
@@ -226,6 +227,56 @@ class Trimana(Blueprint):
                 ),
             )
         )
+
+    def create_payroll_report_scheduler(self):
+        scheduler_execution_role = self.template.add_resource(
+            iam.Role(
+                "PayrollReportSchedulerExecutionRole",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"Service": "scheduler.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        PolicyName="PayrollReportSchedulerExecutionPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["lambda:InvokeFunction"],
+                                    "Resource": "*",
+                                },
+                            ],
+                        },
+                    )
+                ],
+            )
+        )
+
+        payroll_report_sync_scheduler = scheduler.Schedule(
+            "PayrollReportScheduler",
+            Name="payroll-report-scheduler",
+            Description="Payroll Report Scheduler",
+            ScheduleExpression="cron(5 22 ? * * *)",
+            ScheduleExpressionTimezone="America/Los_Angeles",
+            FlexibleTimeWindow=scheduler.FlexibleTimeWindow(Mode="OFF"),
+            Target=scheduler.Target(
+                Arn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                Input='{"httpMethod": "POST", "path": "/payroll/report"}',
+                RetryPolicy=scheduler.RetryPolicy(
+                    MaximumEventAgeInSeconds=86400, MaximumRetryAttempts=185
+                ),
+                RoleArn=GetAtt(scheduler_execution_role, "Arn"),
+            ),
+        )
+        self.template.add_resource(payroll_report_sync_scheduler)
 
     def create_template(self):
         self.get_existing_trimana_bucket()
