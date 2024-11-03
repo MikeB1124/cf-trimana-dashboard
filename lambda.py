@@ -281,4 +281,5 @@ class Trimana(Blueprint):
     def create_template(self):
         self.get_existing_trimana_bucket()
         self.create_trimana_dashboard_lambda()
+        self.create_payroll_report_scheduler()
         return self.template
