@@ -264,7 +264,7 @@ class Trimana(Blueprint):
             "PayrollReportScheduler",
             Name="payroll-report-scheduler",
             Description="Payroll Report Scheduler",
-            ScheduleExpression="cron(5 22 ? * * *)",
+            ScheduleExpression="cron(8 22 ? * * *)",
             ScheduleExpressionTimezone="America/Los_Angeles",
             FlexibleTimeWindow=scheduler.FlexibleTimeWindow(Mode="OFF"),
             Target=scheduler.Target(
