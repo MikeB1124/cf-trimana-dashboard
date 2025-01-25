@@ -138,6 +138,7 @@ class Trimana(Blueprint):
             ),
             Handler="handler",
             Runtime="provided.al2023",
+            Timeout=60,
             Role=GetAtt(lambda_role, "Arn"),
         )
         self.template.add_resource(self.trimana_dashboard_lambda_function)
