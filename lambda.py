@@ -470,7 +470,7 @@ class Trimana(Blueprint):
             FlexibleTimeWindow=scheduler.FlexibleTimeWindow(Mode="OFF"),
             Target=scheduler.Target(
                 Arn=GetAtt(self.twilio_alert_lambda_function, "Arn"),
-                Input='{"httpMethod": "POST", "path": "/alert", "body": "{\"announcement\": \"This is a test announcement. Please be aware of the current situation.\", \"from_number\": \"+17755876906\", \"to_numbers\": [\"+18186895373\"]}"}',
+                Input='{"httpMethod": "POST", "path": "/alert", "body": "{\\"announcement\\": \\"This is a test announcement. Please be aware of the current situation.\\", \\"from_number\\": \\"+17755876906\\", \\"to_numbers\\": [\\"+18186895373\\"]}"}',
                 RetryPolicy=scheduler.RetryPolicy(
                     MaximumEventAgeInSeconds=86400, MaximumRetryAttempts=185
                 ),
