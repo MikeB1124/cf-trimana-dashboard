@@ -465,12 +465,12 @@ class Trimana(Blueprint):
             "TwilioAlertScheduler",
             Name="twilio-alert-scheduler",
             Description="Schedule Twilio Alert",
-            ScheduleExpression="cron(20 22 ? * * *)",
+            ScheduleExpression="cron(0 19 ? * * *)",
             ScheduleExpressionTimezone="America/Los_Angeles",
             FlexibleTimeWindow=scheduler.FlexibleTimeWindow(Mode="OFF"),
             Target=scheduler.Target(
                 Arn=GetAtt(self.twilio_alert_lambda_function, "Arn"),
-                Input='{"httpMethod": "POST", "path": "/alert", "body": "{\\"announcement\\": \\"This is a test announcement. Please be aware of the current situation.\\", \\"from_number\\": \\"+17755876906\\", \\"to_numbers\\": [\\"+18186895373\\"]}"}',
+                Input='{"httpMethod": "POST", "path": "/alert", "body": "{\\"announcement\\": \\"Please double check clock in and clock out timesheets for thata and papu.\\", \\"from_number\\": \\"+17755876906\\", \\"to_numbers\\": [\\"+18186895373\\", \\"+18189156894\\", \\"+18188099978\\"]}"}',
                 RetryPolicy=scheduler.RetryPolicy(
                     MaximumEventAgeInSeconds=86400, MaximumRetryAttempts=185
                 ),
