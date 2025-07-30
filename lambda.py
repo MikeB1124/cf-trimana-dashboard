@@ -378,12 +378,7 @@ class Trimana(Blueprint):
             FunctionName=self.get_variables()["env-dict"]["TwilioAlertLambdaName"],
             Code=awslambda.Code(
                 S3Bucket=Ref(self.existing_trimana_bucket),
-                S3Key=Sub(
-                    "lambdas/${LambdaName}.zip",
-                    LambdaName=self.get_variables()["env-dict"][
-                        "TwilioAlertLambdaName"
-                    ],
-                ),
+                S3Key="lambdas/twilio-alert.zip"
             ),
             Environment=awslambda.Environment(
                 Variables={
