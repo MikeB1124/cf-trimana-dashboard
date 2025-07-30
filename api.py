@@ -22,6 +22,14 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(self.payroll_api_resource)
 
+        self.twilio_alert_api_resource = apigateway.Resource(
+            "TwilioAlertResource",
+            ParentId=GetAtt(self.api, "RootResourceId"),
+            RestApiId=Ref(self.api),
+            PathPart="alert",
+        )
+        self.template.add_resource(self.twilio_alert_api_resource)
+
         self.template.add_output(
             Output(
                 "TrimanaDashboardApiId",
@@ -53,6 +61,14 @@ class Trimana(Blueprint):
             Value=Ref(self.payroll_api_resource),
         )
         self.template.add_resource(ssm_payroll_resource_id)
+
+        ssm_twilio_alert_resource_id = ssm.Parameter(
+            "TwilioAlertResourceId",
+            Name="/trimana/dashboard/alert/resource/id",
+            Type="String",
+            Value=Ref(self.twilio_alert_api_resource),
+        )
+        self.template.add_resource(ssm_twilio_alert_resource_id)
 
     def create_template(self):
         self.create_api_gateway()

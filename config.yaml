@@ -16,6 +16,7 @@ stacks:
           BucketName: trimana-dashboard-bucket
           TrimanaDashboardLambdaName: trimana-dashboard-api
           SharedSecretsId: trimana/dashboard/shared/secrets
+          TwilioAlertLambdaName: twilio-alert-lambda
 
   - name: api
     class_path: api.Trimana

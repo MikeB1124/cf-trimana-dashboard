@@ -278,9 +278,216 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(payroll_report_sync_scheduler)
+    
+    def create_twilio_alert_lambda(self):
+        lambda_role = self.template.add_resource(
+            iam.Role(
+                "TwilioAlertLambdaExecutionRole",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com",
+                                    "apigateway.amazonaws.com",
+                                ]
+                            },
+                            "Action": ["sts:AssumeRole"],
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        PolicyName="TwilioAlertLambdaS3Policy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["s3:GetObject"],
+                                    "Resource": [
+                                        Sub(
+                                            "arn:aws:s3:::${BucketName}/*",
+                                            BucketName=self.get_variables()["env-dict"][
+                                                "BucketName"
+                                            ],
+                                        )
+                                    ],
+                                }
+                            ],
+                        },
+                    ),
+                    iam.Policy(
+                        PolicyName="TwilioAlertLambdaLogPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "logs:CreateLogGroup",
+                                    "Resource": Sub(
+                                        "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                                    ),
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents",
+                                    ],
+                                    "Resource": [
+                                        Sub(
+                                            "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaName}:*",
+                                            LambdaName=self.get_variables()["env-dict"][
+                                                "TwilioAlertLambdaName"
+                                            ],
+                                        )
+                                    ],
+                                },
+                            ],
+                        },
+                    ),
+                    iam.Policy(
+                        PolicyName="TwilioAlertLambdaSecretsManagerPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["secretsmanager:GetSecretValue"],
+                                    "Resource": [
+                                        Sub(
+                                            "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretId}-yuRaM1",
+                                            SecretId=self.get_variables()["env-dict"][
+                                                "SharedSecretsId"
+                                            ],
+                                        )
+                                    ],
+                                }
+                            ],
+                        },
+                    ),
+                ],
+            )
+        )
+
+        self.twilio_alert_lambda_function = awslambda.Function(
+            "TwilioAlertLambdaFunction",
+            FunctionName=self.get_variables()["env-dict"]["TwilioAlertLambdaName"],
+            Code=awslambda.Code(
+                S3Bucket=Ref(self.existing_trimana_bucket),
+                S3Key=Sub(
+                    "lambdas/${LambdaName}.zip",
+                    LambdaName=self.get_variables()["env-dict"][
+                        "TwilioAlertLambdaName"
+                    ],
+                ),
+            ),
+            Environment=awslambda.Environment(
+                Variables={
+                    "SHARED_SECRETS": self.get_variables()["env-dict"][
+                        "SharedSecretsId"
+                    ]
+                }
+            ),
+            Handler="handler",
+            Runtime="provided.al2023",
+            Timeout=60,
+            Role=GetAtt(lambda_role, "Arn"),
+        )
+        self.template.add_resource(self.twilio_alert_lambda_function)
+
+        twilio_alert_api_method = apigateway.Method(
+            "TwilioAlertMethod",
+            DependsOn=self.twilio_alert_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="POST",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId="{{resolve:ssm:/trimana/dashboard/alert/resource/id}}",
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.twilio_alert_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(twilio_alert_api_method)
+
+        self.template.add_resource(
+            awslambda.Permission(
+                "TwilioAlertLambdaInvokePermission",
+                DependsOn=self.twilio_alert_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"][
+                    "TwilioAlertLambdaName"
+                ],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/POST/alert",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+
+    def create_twilio_alert_scheduler(self):
+        scheduler_execution_role = self.template.add_resource(
+            iam.Role(
+                "TwilioAlertSchedulerExecutionRole",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"Service": "scheduler.amazonaws.com"},
+                            "Action": "sts:AssumeRole",
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        PolicyName="TwilioAlertSchedulerExecutionPolicy",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": ["lambda:InvokeFunction"],
+                                    "Resource": "*",
+                                },
+                            ],
+                        },
+                    )
+                ],
+            )
+        )
+
+        twilio_alert_scheduler = scheduler.Schedule(
+            "TwilioAlertScheduler",
+            Name="twilio-alert-scheduler",
+            Description="Schedule Twilio Alert",
+            ScheduleExpression="cron(0 19 ? * * *)",
+            ScheduleExpressionTimezone="America/Los_Angeles",
+            FlexibleTimeWindow=scheduler.FlexibleTimeWindow(Mode="OFF"),
+            Target=scheduler.Target(
+                Arn=GetAtt(self.twilio_alert_lambda_function, "Arn"),
+                Input='{"httpMethod": "POST", "path": "/alert", "body": "{\"announcement\": \"This is a test announcement. Please be aware of the current situation.\", \"from_number\": \"+17755876906\", \"to_numbers\": [\"+18186895373\"]}"}',
+                RetryPolicy=scheduler.RetryPolicy(
+                    MaximumEventAgeInSeconds=86400, MaximumRetryAttempts=185
+                ),
+                RoleArn=GetAtt(scheduler_execution_role, "Arn"),
+            ),
+        )
+        self.template.add_resource(twilio_alert_scheduler)
 
     def create_template(self):
         self.get_existing_trimana_bucket()
         self.create_trimana_dashboard_lambda()
         self.create_payroll_report_scheduler()
+        self.create_twilio_alert_lambda()
+        self.create_twilio_alert_scheduler()
         return self.template
