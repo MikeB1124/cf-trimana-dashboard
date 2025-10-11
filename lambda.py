@@ -142,7 +142,446 @@ class Trimana(Blueprint):
             Role=GetAtt(lambda_role, "Arn"),
         )
         self.template.add_resource(self.trimana_dashboard_lambda_function)
-
+    
+    def create_auth_endpoints(self):
+        """Create authentication endpoints"""
+        # /auth resource
+        auth_resource = apigateway.Resource(
+            "TrimanaDashboardAuthResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="auth",
+        )
+        self.template.add_resource(auth_resource)
+        
+        # /auth/login resource
+        auth_login_resource = apigateway.Resource(
+            "TrimanaDashboardAuthLoginResource",
+            ParentId=Ref(auth_resource),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="login",
+        )
+        self.template.add_resource(auth_login_resource)
+        
+        # POST /auth/login method (no API key required for login)
+        auth_login_method = apigateway.Method(
+            "TrimanaDashboardAuthLoginMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=False,
+            HttpMethod="POST",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(auth_login_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(auth_login_method)
+        
+        # Lambda permission for auth/login
+        self.template.add_resource(
+            awslambda.Permission(
+                "AuthLoginLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/POST/auth/login",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+    
+    def create_employee_endpoints(self):
+        """Create employee CRUD endpoints"""
+        # /employees resource
+        employees_resource = apigateway.Resource(
+            "TrimanaDashboardEmployeesResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="employees",
+        )
+        self.template.add_resource(employees_resource)
+        
+        # GET /employees method
+        employees_get_method = apigateway.Method(
+            "TrimanaDashboardEmployeesGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(employees_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(employees_get_method)
+        
+        # POST /employees method
+        employees_post_method = apigateway.Method(
+            "TrimanaDashboardEmployeesPostMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="POST",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(employees_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(employees_post_method)
+        
+        # /employees/{id} resource
+        employee_id_resource = apigateway.Resource(
+            "TrimanaDashboardEmployeeIdResource",
+            ParentId=Ref(employees_resource),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="{id}",
+        )
+        self.template.add_resource(employee_id_resource)
+        
+        # GET /employees/{id} method
+        employee_get_method = apigateway.Method(
+            "TrimanaDashboardEmployeeGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(employee_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(employee_get_method)
+        
+        # PUT /employees/{id} method
+        employee_put_method = apigateway.Method(
+            "TrimanaDashboardEmployeePutMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="PUT",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(employee_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(employee_put_method)
+        
+        # DELETE /employees/{id} method
+        employee_delete_method = apigateway.Method(
+            "TrimanaDashboardEmployeeDeleteMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="DELETE",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(employee_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(employee_delete_method)
+        
+        # Lambda permissions for employee endpoints
+        self.template.add_resource(
+            awslambda.Permission(
+                "EmployeesGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/employees",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "EmployeesPostLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/POST/employees",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "EmployeeGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/employees/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "EmployeePutLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/PUT/employees/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "EmployeeDeleteLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/DELETE/employees/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+    
+    def create_timecard_endpoints(self):
+        """Create timecard CRUD endpoints"""
+        # /timecards resource
+        timecards_resource = apigateway.Resource(
+            "TrimanaDashboardTimecardsResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="timecards",
+        )
+        self.template.add_resource(timecards_resource)
+        
+        # GET /timecards method
+        timecards_get_method = apigateway.Method(
+            "TrimanaDashboardTimecardsGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(timecards_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(timecards_get_method)
+        
+        # POST /timecards method
+        timecards_post_method = apigateway.Method(
+            "TrimanaDashboardTimecardsPostMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="POST",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(timecards_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(timecards_post_method)
+        
+        # /timecards/{id} resource
+        timecard_id_resource = apigateway.Resource(
+            "TrimanaDashboardTimecardIdResource",
+            ParentId=Ref(timecards_resource),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="{id}",
+        )
+        self.template.add_resource(timecard_id_resource)
+        
+        # GET /timecards/{id} method
+        timecard_get_method = apigateway.Method(
+            "TrimanaDashboardTimecardGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(timecard_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(timecard_get_method)
+        
+        # PUT /timecards/{id} method
+        timecard_put_method = apigateway.Method(
+            "TrimanaDashboardTimecardPutMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="PUT",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(timecard_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(timecard_put_method)
+        
+        # DELETE /timecards/{id} method
+        timecard_delete_method = apigateway.Method(
+            "TrimanaDashboardTimecardDeleteMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="DELETE",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(timecard_id_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(timecard_delete_method)
+        
+        # Lambda permissions for timecard endpoints
+        self.template.add_resource(
+            awslambda.Permission(
+                "TimecardsGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/timecards",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "TimecardsPostLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/POST/timecards",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "TimecardGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/timecards/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "TimecardPutLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/PUT/timecards/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "TimecardDeleteLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/DELETE/timecards/*",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+    
+    def create_payroll_endpoints(self):
+        """Create original payroll event and report endpoints"""
         payroll_event_api_resource = apigateway.Resource(
             "TrimanaDashboardPayrollEventResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/payroll/resource/id}}",
@@ -482,6 +921,10 @@ class Trimana(Blueprint):
     def create_template(self):
         self.get_existing_trimana_bucket()
         self.create_trimana_dashboard_lambda()
+        self.create_auth_endpoints()
+        self.create_employee_endpoints()
+        self.create_timecard_endpoints()
+        self.create_payroll_endpoints()
         self.create_payroll_report_scheduler()
         self.create_twilio_alert_lambda()
         self.create_twilio_alert_scheduler()
