@@ -14,6 +14,51 @@ from troposphere import (
 class Trimana(Blueprint):
     VARIABLES = {"env-dict": {"type": dict}}
 
+    def create_cors_method(self, resource_name, resource_id, rest_api_id):
+        """Helper function to create OPTIONS method for CORS preflight"""
+        cors_method = apigateway.Method(
+            f"{resource_name}CorsMethod",
+            AuthorizationType="NONE",
+            ApiKeyRequired=False,
+            HttpMethod="OPTIONS",
+            RestApiId=rest_api_id,
+            ResourceId=resource_id,
+            Integration=apigateway.Integration(
+                Type="MOCK",
+                IntegrationResponses=[
+                    apigateway.IntegrationResponse(
+                        StatusCode="200",
+                        ResponseParameters={
+                            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                            "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                            "method.response.header.Access-Control-Allow-Origin": "'*'",
+                        },
+                        ResponseTemplates={
+                            "application/json": ""
+                        }
+                    )
+                ],
+                PassthroughBehavior="WHEN_NO_MATCH",
+                RequestTemplates={
+                    "application/json": '{"statusCode": 200}'
+                }
+            ),
+            MethodResponses=[
+                apigateway.MethodResponse(
+                    StatusCode="200",
+                    ResponseParameters={
+                        "method.response.header.Access-Control-Allow-Headers": True,
+                        "method.response.header.Access-Control-Allow-Methods": True,
+                        "method.response.header.Access-Control-Allow-Origin": True,
+                    },
+                    ResponseModels={
+                        "application/json": "Empty"
+                    }
+                )
+            ],
+        )
+        return cors_method
+
     def get_existing_trimana_bucket(self):
         self.existing_trimana_bucket = self.template.add_parameter(
             Parameter(
@@ -183,6 +228,14 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(auth_login_method)
         
+        # OPTIONS /auth/login for CORS
+        auth_login_cors = self.create_cors_method(
+            "TrimanaDashboardAuthLogin",
+            Ref(auth_login_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(auth_login_cors)
+        
         # Lambda permission for auth/login
         self.template.add_resource(
             awslambda.Permission(
@@ -248,6 +301,14 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(employees_post_method)
+        
+        # OPTIONS /employees for CORS
+        employees_cors = self.create_cors_method(
+            "TrimanaDashboardEmployees",
+            Ref(employees_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(employees_cors)
         
         # /employees/{id} resource
         employee_id_resource = apigateway.Resource(
@@ -317,6 +378,14 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(employee_delete_method)
+        
+        # OPTIONS /employees/{id} for CORS
+        employee_id_cors = self.create_cors_method(
+            "TrimanaDashboardEmployeeId",
+            Ref(employee_id_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(employee_id_cors)
         
         # Lambda permissions for employee endpoints
         self.template.add_resource(
@@ -440,6 +509,14 @@ class Trimana(Blueprint):
         )
         self.template.add_resource(timecards_post_method)
         
+        # OPTIONS /timecards for CORS
+        timecards_cors = self.create_cors_method(
+            "TrimanaDashboardTimecards",
+            Ref(timecards_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(timecards_cors)
+        
         # /timecards/{id} resource
         timecard_id_resource = apigateway.Resource(
             "TrimanaDashboardTimecardIdResource",
@@ -508,6 +585,14 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(timecard_delete_method)
+        
+        # OPTIONS /timecards/{id} for CORS
+        timecard_id_cors = self.create_cors_method(
+            "TrimanaDashboardTimecardId",
+            Ref(timecard_id_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(timecard_id_cors)
         
         # Lambda permissions for timecard endpoints
         self.template.add_resource(
