@@ -770,6 +770,60 @@ class Trimana(Blueprint):
             )
         )
     
+    def create_stats_endpoints(self):
+        """Create statistics endpoints"""
+        # /stats resource
+        stats_resource = apigateway.Resource(
+            "TrimanaDashboardStatsResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="stats",
+        )
+        self.template.add_resource(stats_resource)
+        
+        # GET /stats method
+        stats_get_method = apigateway.Method(
+            "TrimanaDashboardStatsGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(stats_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(stats_get_method)
+        
+        # OPTIONS /stats for CORS
+        stats_cors = self.create_cors_method(
+            "TrimanaDashboardStats",
+            Ref(stats_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(stats_cors)
+        
+        # Lambda permission for stats
+        self.template.add_resource(
+            awslambda.Permission(
+                "StatsGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/stats",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+    
     def create_payroll_endpoints(self):
         """Create original payroll event and report endpoints"""
         # First, add OPTIONS to the /payroll parent resource for CORS
@@ -1167,6 +1221,7 @@ class Trimana(Blueprint):
         self.create_employee_endpoints()
         self.create_timecard_endpoints()
         self.create_payperiod_endpoints()
+        self.create_stats_endpoints()
         self.create_payroll_endpoints()
         self.create_payroll_report_scheduler()
         self.create_twilio_alert_lambda()
