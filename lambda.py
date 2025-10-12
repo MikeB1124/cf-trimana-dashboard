@@ -665,6 +665,111 @@ class Trimana(Blueprint):
             )
         )
     
+    def create_payperiod_endpoints(self):
+        """Create pay period endpoints"""
+        # /payperiods resource
+        payperiods_resource = apigateway.Resource(
+            "TrimanaDashboardPayperiodsResource",
+            ParentId="{{resolve:ssm:/trimana/dashboard/api/parent/resource/id}}",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="payperiods",
+        )
+        self.template.add_resource(payperiods_resource)
+        
+        # GET /payperiods method
+        payperiods_get_method = apigateway.Method(
+            "TrimanaDashboardPayperiodsGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(payperiods_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(payperiods_get_method)
+        
+        # OPTIONS /payperiods for CORS
+        payperiods_cors = self.create_cors_method(
+            "TrimanaDashboardPayperiods",
+            Ref(payperiods_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(payperiods_cors)
+        
+        # /payperiods/current resource
+        payperiods_current_resource = apigateway.Resource(
+            "TrimanaDashboardPayperiodsCurrentResource",
+            ParentId=Ref(payperiods_resource),
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            PathPart="current",
+        )
+        self.template.add_resource(payperiods_current_resource)
+        
+        # GET /payperiods/current method
+        payperiods_current_get_method = apigateway.Method(
+            "TrimanaDashboardPayperiodsCurrentGetMethod",
+            DependsOn=self.trimana_dashboard_lambda_function,
+            AuthorizationType="NONE",
+            ApiKeyRequired=True,
+            HttpMethod="GET",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId=Ref(payperiods_current_resource),
+            Integration=apigateway.Integration(
+                IntegrationHttpMethod="POST",
+                Type="AWS_PROXY",
+                Uri=Sub(
+                    "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations",
+                    LambdaArn=GetAtt(self.trimana_dashboard_lambda_function, "Arn"),
+                ),
+            ),
+        )
+        self.template.add_resource(payperiods_current_get_method)
+        
+        # OPTIONS /payperiods/current for CORS
+        payperiods_current_cors = self.create_cors_method(
+            "TrimanaDashboardPayperiodsCurrent",
+            Ref(payperiods_current_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(payperiods_current_cors)
+        
+        # Lambda permissions for pay period endpoints
+        self.template.add_resource(
+            awslambda.Permission(
+                "PayperiodsGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/payperiods",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+        
+        self.template.add_resource(
+            awslambda.Permission(
+                "PayperiodsCurrentGetLambdaInvokePermission",
+                DependsOn=self.trimana_dashboard_lambda_function,
+                Action="lambda:InvokeFunction",
+                FunctionName=self.get_variables()["env-dict"]["TrimanaDashboardLambdaName"],
+                Principal="apigateway.amazonaws.com",
+                SourceArn=Sub(
+                    "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/payperiods/current",
+                    ApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+                ),
+            )
+        )
+    
     def create_payroll_endpoints(self):
         """Create original payroll event and report endpoints"""
         payroll_event_api_resource = apigateway.Resource(
@@ -720,6 +825,14 @@ class Trimana(Blueprint):
             ),
         )
         self.template.add_resource(payroll_report_api_method)
+        
+        # OPTIONS /payroll/report for CORS
+        payroll_report_cors = self.create_cors_method(
+            "TrimanaDashboardPayrollReport",
+            Ref(payroll_report_api_resource),
+            "{{resolve:ssm:/trimana/dashboard/api/id}}"
+        )
+        self.template.add_resource(payroll_report_cors)
 
         self.template.add_resource(
             awslambda.Permission(
@@ -1009,6 +1122,7 @@ class Trimana(Blueprint):
         self.create_auth_endpoints()
         self.create_employee_endpoints()
         self.create_timecard_endpoints()
+        self.create_payperiod_endpoints()
         self.create_payroll_endpoints()
         self.create_payroll_report_scheduler()
         self.create_twilio_alert_lambda()
