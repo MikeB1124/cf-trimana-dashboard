@@ -772,6 +772,50 @@ class Trimana(Blueprint):
     
     def create_payroll_endpoints(self):
         """Create original payroll event and report endpoints"""
+        # First, add OPTIONS to the /payroll parent resource for CORS
+        payroll_parent_cors = apigateway.Method(
+            "TrimanaDashboardPayrollCorsMethod",
+            AuthorizationType="NONE",
+            ApiKeyRequired=False,
+            HttpMethod="OPTIONS",
+            RestApiId="{{resolve:ssm:/trimana/dashboard/api/id}}",
+            ResourceId="{{resolve:ssm:/trimana/dashboard/payroll/resource/id}}",
+            Integration=apigateway.Integration(
+                Type="MOCK",
+                IntegrationResponses=[
+                    apigateway.IntegrationResponse(
+                        StatusCode="200",
+                        ResponseParameters={
+                            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                            "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                            "method.response.header.Access-Control-Allow-Origin": "'*'",
+                        },
+                        ResponseTemplates={
+                            "application/json": ""
+                        }
+                    )
+                ],
+                PassthroughBehavior="WHEN_NO_MATCH",
+                RequestTemplates={
+                    "application/json": '{"statusCode": 200}'
+                }
+            ),
+            MethodResponses=[
+                apigateway.MethodResponse(
+                    StatusCode="200",
+                    ResponseParameters={
+                        "method.response.header.Access-Control-Allow-Headers": True,
+                        "method.response.header.Access-Control-Allow-Methods": True,
+                        "method.response.header.Access-Control-Allow-Origin": True,
+                    },
+                    ResponseModels={
+                        "application/json": "Empty"
+                    }
+                )
+            ],
+        )
+        self.template.add_resource(payroll_parent_cors)
+        
         payroll_event_api_resource = apigateway.Resource(
             "TrimanaDashboardPayrollEventResource",
             ParentId="{{resolve:ssm:/trimana/dashboard/payroll/resource/id}}",
